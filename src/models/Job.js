@@ -108,6 +108,11 @@ const jobSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'
   },
+  companyName: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Company name cannot exceed 100 characters']
+  },
   applications: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Application'
@@ -149,11 +154,31 @@ const jobSchema = new mongoose.Schema({
   isScraped: {
     type: Boolean,
     default: false
+  },
+  // AI Embeddings
+  embedding: {
+    type: [Number], // 384 dimensions for all-MiniLM-L6-v2
+    select: false   // Don't return by default to save bandwidth
   }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
   toObject: { virtuals: true }
+});
+
+// Pre-save hook to generate embedding
+jobSchema.pre('save', async function (next) {
+  if (this.isModified('title') || this.isModified('description') || this.isModified('skills')) {
+    try {
+      const AiService = require('../services/AiService');
+      const text = AiService.getJobText(this);
+      this.embedding = await AiService.generateEmbedding(text);
+    } catch (error) {
+      console.error('Error generating embedding:', error);
+      // Don't block save on AI failure
+    }
+  }
+  next();
 });
 
 // Indexes pour optimiser les requêtes

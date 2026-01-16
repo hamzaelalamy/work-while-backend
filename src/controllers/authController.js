@@ -12,60 +12,60 @@ const { authValidators } = require('../utils/validators');
 const generateToken = (payload) => {
   console.log('🎟️  GENERATING TOKEN:');
   console.log('  Input payload:', payload);
-  
+
   // ✅ CORRECTION CRITIQUE: S'assurer que l'ID est bien présent
   const tokenPayload = {
     id: payload.id || payload._id,  // Support des deux formats
     email: payload.email,
     role: payload.role
   };
-  
+
   console.log('  Final token payload:', tokenPayload);
   console.log('  JWT_SECRET present:', !!process.env.JWT_SECRET);
   console.log('  JWT_EXPIRE:', process.env.JWT_EXPIRE || '15m');
-  
+
   const token = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '15m'
+    expiresIn: process.env.JWT_EXPIRE || '24h'
   });
-  
+
   console.log('  Token generated successfully, length:', token.length);
   console.log('  Token preview:', token.substring(0, 20) + '...');
-  
+
   return token;
 };
 
 // Générer un refresh token
 const generateRefreshToken = (payload) => {
   console.log('🔄 GENERATING REFRESH TOKEN:');
-  
+
   const refreshPayload = {
     id: payload.id || payload._id,
     email: payload.email,
     role: payload.role,
     type: 'refresh'
   };
-  
+
   console.log('  Refresh token payload:', refreshPayload);
-  
+
   const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRE || '7d'
   });
-  
+
   console.log('  Refresh token generated successfully');
-  
+
   return refreshToken;
 };
 
 // Valider et nettoyer les données d'entrée
 const sanitizeUserInput = (data) => {
   const sanitized = {};
-  
+
   if (data.firstName) sanitized.firstName = data.firstName.trim();
   if (data.lastName) sanitized.lastName = data.lastName.trim();
   if (data.email) sanitized.email = data.email.toLowerCase().trim();
   if (data.password) sanitized.password = data.password;
   if (data.role) sanitized.role = data.role;
-  
+
   return sanitized;
 };
 
@@ -89,7 +89,7 @@ const register = catchAsync(async (req, res, next) => {
 
   // Extraire et nettoyer les données
   const { firstName, lastName, email, password, role = 'candidate' } = sanitizeUserInput(req.body);
-  
+
   console.log('  ✅ Validation passed');
   console.log('  Sanitized data:', { firstName, lastName, email, role });
 
@@ -105,7 +105,7 @@ const register = catchAsync(async (req, res, next) => {
 
   try {
     console.log('  👤 Creating new user...');
-    
+
     // ✅ CORRECTION: S'assurer que le rôle est bien défini
     const userData = {
       firstName,
@@ -116,7 +116,7 @@ const register = catchAsync(async (req, res, next) => {
       isActive: true,
       emailVerified: process.env.NODE_ENV === 'development' // Auto-verify en dev
     };
-    
+
     console.log('  📋 User data to save:', {
       ...userData,
       password: '[HIDDEN]'
@@ -125,7 +125,7 @@ const register = catchAsync(async (req, res, next) => {
     // Créer le nouvel utilisateur
     const user = new User(userData);
     await user.save();
-    
+
     console.log('  ✅ User created successfully:');
     console.log('    ID:', user._id);
     console.log('    Email:', user.email);
@@ -172,18 +172,18 @@ const register = catchAsync(async (req, res, next) => {
 
   } catch (error) {
     console.error('  ❌ Registration error:', error);
-    
+
     // Gestion des erreurs spécifiques de MongoDB
     if (error.code === 11000) {
       const field = Object.keys(error.keyPattern)[0];
       return next(new AppError(`${field} already exists`, 409));
     }
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return next(new AppError(`Validation error: ${messages.join(', ')}`, 400));
     }
-    
+
     return next(new AppError('Registration failed. Please try again.', 500));
   }
 });
@@ -210,7 +210,7 @@ const login = catchAsync(async (req, res, next) => {
 
   try {
     console.log('  🔍 Searching for user...');
-    
+
     // Rechercher l'utilisateur avec le mot de passe
     const user = await User.findOne({ email }).select('+password +isActive');
 
@@ -233,7 +233,7 @@ const login = catchAsync(async (req, res, next) => {
     }
 
     console.log('  🔐 Verifying password...');
-    
+
     // Vérifier le mot de passe
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
@@ -308,7 +308,7 @@ const logout = catchAsync(async (req, res, next) => {
   // En production, vous pourriez vouloir invalider le token
   // Pour l'instant, on renvoie juste une réponse de succès
   console.log('  ✅ Logout successful');
-  
+
   sendResponse(res, 200, 'success', 'Logout successful');
 });
 
@@ -323,7 +323,7 @@ const getMe = catchAsync(async (req, res, next) => {
 
   try {
     console.log('  🔍 Fetching complete user profile...');
-    
+
     // ✅ CORRECTION: Utiliser req.user._id au lieu de req.user.id
     const user = await User.findById(req.user._id)
       .populate('savedJobs', 'title location type salary company')
@@ -379,7 +379,7 @@ const getMe = catchAsync(async (req, res, next) => {
 // =====================================
 const refreshToken = catchAsync(async (req, res, next) => {
   console.log('\n🔄 TOKEN REFRESH REQUEST:');
-  
+
   const { refreshToken: clientRefreshToken } = req.body;
 
   if (!clientRefreshToken) {
@@ -404,7 +404,7 @@ const refreshToken = catchAsync(async (req, res, next) => {
     // Rechercher l'utilisateur
     console.log('  🔍 Looking up user...');
     const user = await User.findById(decoded.id).select('+isActive');
-    
+
     if (!user || !user.isActive) {
       console.log('  ❌ User not found or inactive');
       return next(new AppError('Invalid refresh token', 401));
@@ -432,13 +432,13 @@ const refreshToken = catchAsync(async (req, res, next) => {
 
   } catch (error) {
     console.error('  ❌ Refresh token error:', error);
-    
+
     if (error.name === 'JsonWebTokenError') {
       return next(new AppError('Invalid refresh token', 401));
     } else if (error.name === 'TokenExpiredError') {
       return next(new AppError('Refresh token has expired', 401));
     }
-    
+
     return next(new AppError('Invalid or expired refresh token', 401));
   }
 });
@@ -448,7 +448,7 @@ const refreshToken = catchAsync(async (req, res, next) => {
 // =====================================
 const forgotPassword = catchAsync(async (req, res, next) => {
   console.log('\n🔑 PASSWORD RESET REQUEST:');
-  
+
   const { error } = authValidators.forgotPassword.validate(req.body);
   if (error) {
     console.log('  ❌ Validation error:', error.details[0].message);
@@ -461,11 +461,11 @@ const forgotPassword = catchAsync(async (req, res, next) => {
   try {
     console.log('  🔍 Looking up user...');
     const user = await User.findOne({ email });
-    
+
     if (!user) {
       console.log('  ⚠️  User not found, but sending generic response for security');
       // Pour la sécurité, on renvoie toujours la même réponse
-      return sendResponse(res, 200, 'success', 
+      return sendResponse(res, 200, 'success',
         'If an account with that email exists, a password reset link has been sent');
     }
 
@@ -490,7 +490,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
     // En production, envoyer l'email ici
     // await sendResetPasswordEmail(user.email, resetToken);
 
-    sendResponse(res, 200, 'success', 
+    sendResponse(res, 200, 'success',
       'If an account with that email exists, a password reset link has been sent');
 
   } catch (error) {
@@ -504,7 +504,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
 // =====================================
 const resetPassword = catchAsync(async (req, res, next) => {
   console.log('\n🔄 PASSWORD RESET:');
-  
+
   const { error } = authValidators.resetPassword.validate(req.body);
   if (error) {
     console.log('  ❌ Validation error:', error.details[0].message);
@@ -516,10 +516,10 @@ const resetPassword = catchAsync(async (req, res, next) => {
 
   try {
     console.log('  🔍 Verifying reset token...');
-    
+
     // Vérifier le token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     if (decoded.purpose !== 'password-reset') {
       console.log('  ❌ Invalid token purpose:', decoded.purpose);
       return next(new AppError('Invalid reset token', 400));
@@ -587,7 +587,7 @@ const resetPassword = catchAsync(async (req, res, next) => {
       console.log('  ❌ Token verification failed:', error.message);
       return next(new AppError('Invalid or expired reset token', 400));
     }
-    
+
     console.error('  ❌ Reset password error:', error);
     return next(new AppError('Failed to reset password', 500));
   }
@@ -598,14 +598,14 @@ const resetPassword = catchAsync(async (req, res, next) => {
 // =====================================
 const verifyEmail = catchAsync(async (req, res, next) => {
   console.log('\n📧 EMAIL VERIFICATION:');
-  
+
   const { token } = req.params;
   console.log('  🔑 Verification token received');
 
   try {
     console.log('  🔍 Verifying token...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+
     if (decoded.purpose !== 'email-verification') {
       console.log('  ❌ Invalid token purpose:', decoded.purpose);
       return next(new AppError('Invalid verification token', 400));
@@ -613,7 +613,7 @@ const verifyEmail = catchAsync(async (req, res, next) => {
 
     console.log('  ✅ Token verified, looking up user...');
     const user = await User.findById(decoded.id);
-    
+
     if (!user) {
       console.log('  ❌ User not found');
       return next(new AppError('Invalid verification token', 400));
@@ -637,7 +637,7 @@ const verifyEmail = catchAsync(async (req, res, next) => {
       console.log('  ❌ Token verification failed:', error.message);
       return next(new AppError('Invalid or expired verification token', 400));
     }
-    
+
     console.error('  ❌ Email verification error:', error);
     return next(new AppError('Failed to verify email', 500));
   }
@@ -652,7 +652,7 @@ const debug = catchAsync(async (req, res, next) => {
   }
 
   console.log('\n🐛 AUTH DEBUG ENDPOINT:');
-  
+
   const debugInfo = {
     environment: process.env.NODE_ENV,
     timestamp: new Date().toISOString(),
@@ -691,13 +691,13 @@ const updateProfile = catchAsync(async (req, res, next) => {
   console.log('\n📝 PROFILE UPDATE:');
   console.log('  User ID:', req.user._id);
   console.log('  Update data:', req.body);
-  
+
   const allowedFields = [
-    'firstName', 
-    'lastName', 
+    'firstName',
+    'lastName',
     'profile'
   ];
-  
+
   const updates = {};
   Object.keys(req.body).forEach(key => {
     if (allowedFields.includes(key)) {
@@ -726,7 +726,7 @@ const updateProfile = catchAsync(async (req, res, next) => {
 const changePassword = catchAsync(async (req, res, next) => {
   console.log('\n🔐 PASSWORD CHANGE:');
   console.log('  User ID:', req.user._id);
-  
+
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
@@ -765,21 +765,21 @@ module.exports = {
   logout,
   getMe,
   refreshToken,
-  
+
   // Gestion des mots de passe
   forgotPassword,
   resetPassword,
   changePassword,
-  
+
   // Vérifications
   verifyEmail,
-  
+
   // Profil utilisateur
   updateProfile,
-  
+
   // Debug (développement uniquement)
   debug,
-  
+
   // Utilitaires (pour tests ou usage interne)
   generateToken,
   generateRefreshToken

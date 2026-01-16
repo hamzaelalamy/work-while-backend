@@ -4,7 +4,7 @@ const scrapingLogSchema = new mongoose.Schema({
     source: {
         type: String,
         required: true,
-        enum: ['indeed', 'maroc-annonce', 'other']
+        enum: ['indeed', 'maroc-annonce', 'rekrute', 'other']
     },
     status: {
         type: String,

@@ -20,6 +20,9 @@ const jobRoutes = require('./routes/jobs');
 const userRoutes = require('./routes/users');
 const applicationRoutes = require('./routes/applications');
 const companyRoutes = require('./routes/companies');
+const scrapingRoutes = require('./routes/scraping');
+const analyticsRoutes = require('./routes/analytics');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -40,19 +43,19 @@ app.set('trust proxy', 1);
 const corsOptions = {
   origin: function (origin, callback) {
     console.log(`\n🔍 CORS Check - Origin: "${origin || 'NO ORIGIN'}"`);
-    
+
     // Always allow requests with no origin (Postman, mobile apps, etc.)
     if (!origin) {
       console.log('✅ CORS: No origin - ALLOWED');
       return callback(null, true);
     }
-    
+
     // Define your allowed origins - EXACT MATCHES
     const allowedOrigins = [
       // Your Vercel deployments
       'https://trouvetonjob.vercel.app',
       'https://workwhile-front-d2sc.vercel.app',
-      
+
       // Local development
       'http://localhost:3000',
       'http://localhost:5173',
@@ -61,7 +64,7 @@ const corsOptions = {
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5174',
     ];
-    
+
     // Define patterns for dynamic domains
     const allowedPatterns = [
       /^https:\/\/.*\.vercel\.app$/,
@@ -71,44 +74,44 @@ const corsOptions = {
       /^https:\/\/.*\.ngrok\.app$/,
       /^https:\/\/.*\.ngrok\.dev$/,
     ];
-    
+
     // Check exact matches first
     if (allowedOrigins.includes(origin)) {
       console.log(`✅ CORS: "${origin}" ALLOWED (exact match)`);
       return callback(null, true);
     }
-    
+
     // Check pattern matches
     const matchedPattern = allowedPatterns.find(pattern => pattern.test(origin));
     if (matchedPattern) {
       console.log(`✅ CORS: "${origin}" ALLOWED (pattern: ${matchedPattern})`);
       return callback(null, true);
     }
-    
+
     // Development mode - be permissive
     if (process.env.NODE_ENV === 'development') {
       console.log(`🟡 CORS: Development mode - allowing "${origin}"`);
       return callback(null, true);
     }
-    
+
     // Reject the origin
     console.log(`❌ CORS: "${origin}" REJECTED`);
     console.log(`   Available origins: ${allowedOrigins.join(', ')}`);
     return callback(null, false); // Don't throw error, just return false
   },
-  
+
   credentials: true,
-  
+
   methods: [
-    'GET', 
-    'POST', 
-    'PUT', 
-    'DELETE', 
-    'PATCH', 
-    'OPTIONS', 
+    'GET',
+    'POST',
+    'PUT',
+    'DELETE',
+    'PATCH',
+    'OPTIONS',
     'HEAD'
   ],
-  
+
   allowedHeaders: [
     'Origin',
     'X-Requested-With',
@@ -123,14 +126,14 @@ const corsOptions = {
     'X-Real-IP',
     'User-Agent'
   ],
-  
+
   exposedHeaders: [
-    'X-Auth-Token', 
-    'X-Total-Count', 
+    'X-Auth-Token',
+    'X-Total-Count',
     'X-Request-ID',
     'Access-Control-Allow-Origin'
   ],
-  
+
   optionsSuccessStatus: 200,
   preflightContinue: false,
   maxAge: 86400 // 24 hours preflight cache
@@ -150,7 +153,7 @@ app.use('*', (req, res, next) => {
     console.log(`   Method: ${req.headers['access-control-request-method'] || 'NONE'}`);
     console.log(`   Headers: ${req.headers['access-control-request-headers'] || 'NONE'}`);
     console.log(`   User-Agent: ${(req.headers['user-agent'] || '').substring(0, 50)}...`);
-    
+
     // Log the response headers that will be sent
     res.on('finish', () => {
       console.log(`📤 OPTIONS RESPONSE HEADERS:`);
@@ -167,14 +170,14 @@ app.use('*', (req, res, next) => {
 // Additional manual OPTIONS handler for auth routes (extra safety)
 app.options('/api/auth/*', (req, res) => {
   console.log(`🔐 Manual OPTIONS handler for auth route: ${req.originalUrl}`);
-  
+
   // Manually set CORS headers
   res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,PATCH,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Origin,X-Requested-With,Content-Type,Accept,Authorization,ngrok-skip-browser-warning');
   res.header('Access-Control-Max-Age', '86400');
-  
+
   res.status(200).send();
 });
 
@@ -224,16 +227,16 @@ console.log('⚠️  AUTH RATE LIMITING DISABLED FOR TESTING');
 // =====================================
 // BODY PARSING MIDDLEWARE
 // =====================================
-app.use(express.json({ 
+app.use(express.json({
   limit: process.env.MAX_JSON_SIZE || '10mb',
   verify: (req, res, buf, encoding) => {
     req.rawBody = buf;
   }
 }));
 
-app.use(express.urlencoded({ 
-  extended: true, 
-  limit: process.env.MAX_URL_ENCODED_SIZE || '10mb' 
+app.use(express.urlencoded({
+  extended: true,
+  limit: process.env.MAX_URL_ENCODED_SIZE || '10mb'
 }));
 
 // =====================================
@@ -279,12 +282,12 @@ app.use('/uploads', express.static(uploadsPath, {
 app.use((req, res, next) => {
   req.id = require('crypto').randomBytes(8).toString('hex');
   res.setHeader('X-Request-ID', req.id);
-  
+
   // Log all requests in development
   if (process.env.NODE_ENV === 'development') {
     console.log(`📥 ${req.method} ${req.originalUrl} from ${req.headers.origin || 'no-origin'} [${req.id}]`);
   }
-  
+
   next();
 });
 
@@ -316,7 +319,7 @@ app.get('/api/health', (req, res) => {
       general: 'ENABLED (1000 req/15min)'
     }
   };
-  
+
   console.log(`✅ Health check accessed from: ${req.headers.origin || 'direct access'}`);
   res.json(healthData);
 });
@@ -363,7 +366,7 @@ app.get('/api/cors-test', (req, res) => {
       general: 'ACTIVE'
     }
   };
-  
+
   console.log(`🧪 CORS Test from: ${req.headers.origin}`);
   res.json(corsInfo);
 });
@@ -389,7 +392,7 @@ app.all('/api/cors-debug', (req, res) => {
   console.log(`   Path: ${req.originalUrl}`);
   console.log(`   Content-Type: ${req.headers['content-type'] || 'NONE'}`);
   console.log(`   Authorization: ${req.headers.authorization ? 'Present' : 'None'}`);
-  
+
   res.json({
     success: true,
     message: 'CORS debug endpoint working!',
@@ -465,6 +468,9 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/companies', companyRoutes);
+app.use('/api/admin/scraping', scrapingRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // =====================================
 // ERROR HANDLING
@@ -501,7 +507,7 @@ app.use('*', (req, res) => {
       suggestion: 'Check /api/status for available endpoints'
     });
   }
-  
+
   res.status(404).json({
     error: 'Route not found',
     message: `The route ${req.originalUrl} does not exist on this server`,
@@ -546,7 +552,7 @@ const server = app.listen(PORT, HOST, () => {
   console.log(`   ✅ General Rate Limiting: 1000 requests/15min`);
   console.log(`   🧪 Ready for unlimited registration/login attempts!`);
   console.log('='.repeat(70));
-  
+
   if (process.env.NODE_ENV === 'development') {
     console.log(`\n🔧 Development Mode Features:`);
     console.log(`   📝 Detailed request logging enabled`);
@@ -556,9 +562,9 @@ const server = app.listen(PORT, HOST, () => {
     console.log(`   ⚠️  Auth rate limiting DISABLED for testing`);
     console.log(`\n💡 Pro tip: Watch this console for detailed logs!`);
   }
-  
+
   console.log('\n');
-  
+
   logger.info(`🚀 WorkWhile API Server started on ${HOST}:${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
 });
 

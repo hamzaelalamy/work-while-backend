@@ -118,6 +118,18 @@ const getAllJobs = catchAsync(async (req, res, next) => {
   }
 });
 
+// Obtenir tous les emplois pour l'admin (sans filtre de statut actif)
+const getAllJobsAdmin = catchAsync(async (req, res, next) => {
+  const jobs = await Job.find({})
+    .populate('company', 'name')
+    .populate('postedBy', 'firstName lastName')
+    .sort({ createdAt: -1 });
+
+  sendResponse(res, 200, 'success', 'All jobs retrieved successfully', {
+    data: jobs
+  });
+});
+
 // Obtenir un emploi par ID
 const getJobById = catchAsync(async (req, res, next) => {
   const { id } = req.params;
@@ -233,7 +245,7 @@ const createJob = catchAsync(async (req, res, next) => {
     console.log('✨ Final cleaned data before validation:', cleanedData);
 
     // ✅ STEP 6: Validation with Joi (without postedBy field)
-    const { error } = jobValidators.createJob.validate(cleanedData, { 
+    const { error } = jobValidators.createJob.validate(cleanedData, {
       allowUnknown: false, // Don't allow unknown fields
       stripUnknown: true   // Remove unknown fields if any
     });
@@ -274,24 +286,24 @@ const createJob = catchAsync(async (req, res, next) => {
 
   } catch (error) {
     console.error('💥 Create job error:', error);
-    
+
     // ✅ BETTER ERROR HANDLING
     if (error.name === 'ValidationError') {
       // Mongoose validation error
       const errors = Object.values(error.errors).map(err => err.message);
       return next(new AppError(`Validation failed: ${errors.join(', ')}`, 400));
     }
-    
+
     if (error.name === 'CastError') {
       // Invalid ObjectId or type casting error
       return next(new AppError('Invalid data format provided', 400));
     }
-    
+
     if (error.code === 11000) {
       // Duplicate key error
       return next(new AppError('Duplicate entry detected', 400));
     }
-    
+
     // Generic server error
     return next(new AppError('Failed to create job. Please try again.', 500));
   }
@@ -525,6 +537,7 @@ const getTimeAgo = (date) => {
 
 module.exports = {
   getAllJobs,
+  getAllJobsAdmin,
   getJobById,
   createJob,
   updateJob,

@@ -4,6 +4,17 @@ const Job = require('../models/Job');
 const { catchAsync, AppError, sendResponse, getPaginationMeta } = require('../utils/helpers');
 const { userValidators } = require('../utils/validators');
 
+// Obtenir tous les utilisateurs (Admin)
+const getAllUsers = catchAsync(async (req, res, next) => {
+  const users = await User.find({})
+    .select('-password')
+    .sort({ createdAt: -1 });
+
+  sendResponse(res, 200, 'success', 'Users retrieved successfully', {
+    data: users
+  });
+});
+
 // Obtenir le profil de l'utilisateur
 const getProfile = catchAsync(async (req, res, next) => {
   try {
@@ -37,7 +48,7 @@ const updateProfile = catchAsync(async (req, res, next) => {
     // Filtrer les champs autorisés
     const allowedFields = ['firstName', 'lastName', 'profile'];
     const updates = {};
-    
+
     Object.keys(req.body).forEach(key => {
       if (allowedFields.includes(key)) {
         updates[key] = req.body[key];
@@ -153,7 +164,7 @@ const removeSavedJob = catchAsync(async (req, res, next) => {
 
   try {
     const user = await User.findById(req.user._id);
-    
+
     // Retirer l'emploi des favoris
     user.savedJobs = user.savedJobs.filter(id => id.toString() !== jobId);
     await user.save();
@@ -176,7 +187,7 @@ const changePassword = catchAsync(async (req, res, next) => {
 
     // Récupérer l'utilisateur avec le mot de passe
     const user = await User.findById(req.user._id).select('+password');
-    
+
     if (!user) {
       return next(new AppError('User not found', 404));
     }
@@ -203,7 +214,7 @@ const changePassword = catchAsync(async (req, res, next) => {
 const getUserStats = catchAsync(async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).populate('savedJobs');
-    
+
     if (!user) {
       return next(new AppError('User not found', 404));
     }
@@ -219,7 +230,7 @@ const getUserStats = catchAsync(async (req, res, next) => {
     if (user.role === 'candidate') {
       const Application = require('../models/Application');
       const applications = await Application.find({ applicant: user._id });
-      
+
       stats.applicationsCount = applications.length;
       stats.pendingApplications = applications.filter(app => app.status === 'pending').length;
       stats.shortlistedApplications = applications.filter(app => app.status === 'shortlisted').length;
@@ -247,7 +258,7 @@ const deleteAccount = catchAsync(async (req, res, next) => {
   try {
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { 
+      {
         isActive: false,
         email: `deleted_${Date.now()}_${user.email}` // Éviter les conflits d'email
       },
@@ -299,6 +310,7 @@ const getTimeAgo = (date) => {
 };
 
 module.exports = {
+  getAllUsers,
   getProfile,
   updateProfile,
   getSavedJobs,

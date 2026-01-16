@@ -1,16 +1,15 @@
-// routes/jobs.js
 const express = require('express');
+const router = express.Router();
 const jobController = require('../controllers/jobController');
+const searchController = require('../controllers/searchController');
 const { auth, authorize, optionalAuth } = require('../middleware/auth');
 const { validate } = require('../middleware/validation');
 const { jobValidators } = require('../utils/validators');
 
-const router = express.Router();
-
 // Route de test
 router.get('/test', (req, res) => {
-  res.json({ 
-    message: 'Job routes are working!', 
+  res.json({
+    message: 'Job routes are working!',
     timestamp: new Date(),
     endpoints: [
       'GET /jobs - Get all jobs',
@@ -36,6 +35,17 @@ router.get('/recommended', jobController.getRecommendedJobs);
 // Obtenir les statistiques des emplois
 router.get('/stats', jobController.getJobStats);
 
+// Nouvelle route pour la recherche sémantique (ajoutée avant /:id pour éviter les collisions)
+router.get('/search/semantic', searchController.searchJobs); // Added new route
+
+// Route ADMIN pour régénérer les embeddings
+router.post(
+  '/admin/regenerate-embeddings',
+  auth,
+  authorize('admin'),
+  searchController.generateEmbeddings
+);
+
 // Obtenir un emploi par ID
 router.get('/:id', optionalAuth, jobController.getJobById);
 
@@ -45,25 +55,25 @@ router.get('/:id', optionalAuth, jobController.getJobById);
 router.get('/my/jobs', auth, authorize('employer', 'admin'), jobController.getMyJobs);
 
 // Créer un nouvel emploi
-router.post('/', 
-  auth, 
-  authorize('employer', 'admin'), 
-  validate(jobValidators.createJob), 
+router.post('/',
+  auth,
+  authorize('employer', 'admin'),
+  validate(jobValidators.createJob),
   jobController.createJob
 );
 
 // Mettre à jour un emploi
-router.put('/:id', 
-  auth, 
-  authorize('employer', 'admin'), 
-  validate(jobValidators.updateJob), 
+router.put('/:id',
+  auth,
+  authorize('employer', 'admin'),
+  validate(jobValidators.updateJob),
   jobController.updateJob
 );
 
 // Supprimer un emploi
-router.delete('/:id', 
-  auth, 
-  authorize('employer', 'admin'), 
+router.delete('/:id',
+  auth,
+  authorize('employer', 'admin'),
   jobController.deleteJob
 );
 
