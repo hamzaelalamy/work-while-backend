@@ -1,0 +1,731 @@
+{
+  "info": {
+    "name": "WorkWhile API",
+    "description": "Complete API collection for WorkWhile job platform. Set {{baseUrl}} (e.g. http://localhost:5000/api) and run Auth > Login to save {{token}} for protected routes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health",
+            "description": "API health check"
+          }
+        },
+        {
+          "name": "Ping",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/ping",
+            "description": "Simple ping"
+          }
+        },
+        {
+          "name": "API Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/status",
+            "description": "API status and endpoints"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidate@example.com\",\n  \"password\": \"Password123!\",\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"role\": \"candidate\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Register new user. Roles: candidate, employer, admin"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "  console.log('Token saved to collection variable');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@workwhile.com\",\n  \"password\": \"Admin123!\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Login – saves token to collection variable for other requests"
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/auth/me",
+            "description": "Get current user (requires auth)"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Logout (requires auth)"
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "description": "Request password reset email"
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"<reset-token-from-email>\",\n  \"password\": \"NewPassword123!\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/reset-password",
+            "description": "Reset password with token from email"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Jobs",
+      "item": [
+        {
+          "name": "Get All Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs?page=1&limit=50&sortBy=createdAt&sortOrder=desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "50" },
+                { "key": "search", "value": "", "disabled": true },
+                { "key": "location", "value": "", "disabled": true },
+                { "key": "type", "value": "", "disabled": true },
+                { "key": "category", "value": "", "disabled": true },
+                { "key": "sortBy", "value": "createdAt" },
+                { "key": "sortOrder", "value": "desc" }
+              ]
+            },
+            "description": "List jobs with optional filters. Auth optional."
+          }
+        },
+        {
+          "name": "Get Job By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/jobs/{{jobId}}",
+            "description": "Get single job. Set jobId in collection/env or replace in URL."
+          }
+        },
+        {
+          "name": "Get Recommended Jobs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/jobs/recommended?limit=6",
+            "description": "Get recommended jobs"
+          }
+        },
+        {
+          "name": "Get Job Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/jobs/stats",
+            "description": "Job statistics"
+          }
+        },
+        {
+          "name": "Semantic Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/jobs/search/semantic?query=developer",
+              "host": ["{{baseUrl}}"],
+              "path": ["jobs", "search", "semantic"],
+              "query": [{ "key": "query", "value": "developer" }]
+            },
+            "description": "AI semantic job search"
+          }
+        },
+        {
+          "name": "Create Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Developer\",\n  \"description\": \"We are looking for a senior developer.\",\n  \"location\": \"Casablanca\",\n  \"type\": \"full-time\",\n  \"category\": \"Technology\",\n  \"experienceLevel\": \"senior\",\n  \"salary\": { \"min\": 15000, \"max\": 25000, \"currency\": \"MAD\", \"period\": \"monthly\" },\n  \"skills\": [\"JavaScript\", \"Node.js\", \"React\"]\n}"
+            },
+            "url": "{{baseUrl}}/jobs",
+            "description": "Create job (employer/admin)"
+          }
+        },
+        {
+          "name": "Update Job",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Developer (Updated)\",\n  \"description\": \"Updated description.\"\n}"
+            },
+            "url": "{{baseUrl}}/jobs/{{jobId}}",
+            "description": "Update job (employer/admin)"
+          }
+        },
+        {
+          "name": "Delete Job",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/jobs/{{jobId}}",
+            "description": "Delete job (employer/admin)"
+          }
+        },
+        {
+          "name": "Get My Jobs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/jobs/my/jobs?page=1&limit=10",
+            "description": "Get current user's jobs (employer/admin)"
+          }
+        },
+        {
+          "name": "Regenerate Embeddings (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/jobs/admin/regenerate-embeddings",
+            "description": "Trigger embedding generation for jobs without embeddings (admin)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/users/profile",
+            "description": "Get current user profile"
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+            },
+            "url": "{{baseUrl}}/users/profile",
+            "description": "Update current user profile"
+          }
+        },
+        {
+          "name": "Get Saved Jobs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/users/saved-jobs?page=1&limit=10",
+            "description": "Get user's saved jobs (candidate)"
+          }
+        },
+        {
+          "name": "Save Job",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/users/save-job/{{jobId}}",
+            "description": "Save a job (candidate)"
+          }
+        },
+        {
+          "name": "Remove Saved Job",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/users/save-job/{{jobId}}",
+            "description": "Remove job from saved (candidate)"
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"OldPassword123!\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+            },
+            "url": "{{baseUrl}}/users/change-password",
+            "description": "Change password (authenticated user)"
+          }
+        },
+        {
+          "name": "Get User Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/users/stats",
+            "description": "Get current user statistics"
+          }
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/users/profile",
+            "description": "Delete own account"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "item": [
+        {
+          "name": "Get My Applications",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/applications/my?page=1&limit=10",
+            "description": "Get current user's applications (candidate)"
+          }
+        },
+        {
+          "name": "Create Application",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "job", "value": "{{jobId}}", "type": "text" },
+                { "key": "coverLetter", "value": "I am very interested in this position.", "type": "text" },
+                { "key": "personalInfo[firstName]", "value": "John", "type": "text" },
+                { "key": "personalInfo[lastName]", "value": "Doe", "type": "text" },
+                { "key": "personalInfo[email]", "value": "john@example.com", "type": "text" },
+                { "key": "personalInfo[phone]", "value": "+212600000000", "type": "text" },
+                { "key": "resume", "type": "file", "src": [] }
+              ]
+            },
+            "url": "{{baseUrl}}/applications",
+            "description": "Submit application (multipart/form-data with resume file). Candidate only."
+          }
+        },
+        {
+          "name": "Withdraw Application",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/applications/{{applicationId}}/withdraw",
+            "description": "Withdraw own application (candidate)"
+          }
+        },
+        {
+          "name": "Get Applications By Job",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/applications/job/{{jobId}}",
+            "description": "Get applications for a job (employer/admin)"
+          }
+        },
+        {
+          "name": "Update Application Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"shortlisted\",\n  \"notes\": \"Optional note\"\n}"
+            },
+            "url": "{{baseUrl}}/applications/{{applicationId}}/status",
+            "description": "Update application status (employer/admin). Status: pending, reviewing, shortlisted, interviewed, offered, rejected, withdrawn"
+          }
+        },
+        {
+          "name": "Get Application Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/applications/stats",
+            "description": "Application statistics (employer/admin)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Companies",
+      "item": [
+        {
+          "name": "Get All Companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/companies",
+            "description": "List companies"
+          }
+        },
+        {
+          "name": "Get Company By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/companies/{{companyId}}",
+            "description": "Get single company"
+          }
+        },
+        {
+          "name": "Get My Company",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/companies/my",
+            "description": "Get current user's company (employer/admin)"
+          }
+        },
+        {
+          "name": "Create Company",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corp\",\n  \"industry\": \"Technology\",\n  \"size\": \"11-50\",\n  \"location\": \"Casablanca\",\n  \"description\": \"We build software.\",\n  \"website\": \"https://acme.com\",\n  \"phone\": \"+212500000000\"\n}"
+            },
+            "url": "{{baseUrl}}/companies",
+            "description": "Create company (employer/admin)"
+          }
+        },
+        {
+          "name": "Update My Company",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Acme Corp Updated\",\n  \"description\": \"Updated description.\"\n}"
+            },
+            "url": "{{baseUrl}}/companies/my",
+            "description": "Update own company (employer/admin)"
+          }
+        },
+        {
+          "name": "Update Company By ID",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\"\n}"
+            },
+            "url": "{{baseUrl}}/companies/{{companyId}}",
+            "description": "Update company by ID (owner or admin)"
+          }
+        },
+        {
+          "name": "Delete Company",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/companies/{{companyId}}",
+            "description": "Delete company (owner or admin)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Overview",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/analytics/overview",
+            "description": "Market overview (admin)"
+          }
+        },
+        {
+          "name": "Top Sectors",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/analytics/sectors",
+            "description": "Top sectors by volume & salary (admin)"
+          }
+        },
+        {
+          "name": "Top Skills",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/analytics/skills",
+            "description": "Most in-demand skills (admin)"
+          }
+        },
+        {
+          "name": "Locations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/analytics/locations",
+            "description": "Top locations (admin)"
+          }
+        },
+        {
+          "name": "Job Trends",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/analytics/trends",
+            "description": "Job posting trends last 30 days (admin)"
+          }
+        },
+        {
+          "name": "Application Status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/analytics/application-status",
+            "description": "Application status distribution (admin)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/admin/users?page=1&limit=20",
+            "description": "List all users (admin)"
+          }
+        },
+        {
+          "name": "Get All Jobs (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/admin/jobs?page=1&limit=20",
+            "description": "List all jobs including drafts (admin)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Scraping",
+      "item": [
+        {
+          "name": "Trigger Scraping",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/admin/scraping/trigger",
+            "description": "Trigger scraping job (admin)"
+          }
+        },
+        {
+          "name": "Get Scraping History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/admin/scraping/history",
+            "description": "Get scraping run history (admin)"
+          }
+        },
+        {
+          "name": "Get Scraped Jobs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/admin/scraping/jobs",
+            "description": "Get scraped jobs (admin)"
+          }
+        },
+        {
+          "name": "Approve Scraped Job",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/admin/scraping/jobs/{{jobId}}/approve",
+            "description": "Approve scraped job (admin)"
+          }
+        },
+        {
+          "name": "Reject Scraped Job",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/admin/scraping/jobs/{{jobId}}/reject",
+            "description": "Reject scraped job (admin)"
+          }
+        },
+        {
+          "name": "Bulk Approve Jobs",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobIds\": [\"id1\", \"id2\"]\n}"
+            },
+            "url": "{{baseUrl}}/admin/scraping/jobs/bulk-approve",
+            "description": "Bulk approve scraped jobs (admin)"
+          }
+        },
+        {
+          "name": "Bulk Reject Jobs",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"jobIds\": [\"id1\", \"id2\"]\n}"
+            },
+            "url": "{{baseUrl}}/admin/scraping/jobs/bulk-reject",
+            "description": "Bulk reject scraped jobs (admin)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "CV Match",
+      "item": [
+        {
+          "name": "Upload CV and Get Matches",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "cv", "type": "file", "src": "", "description": "PDF or DOCX file" },
+                { "key": "limit", "value": "20", "type": "text" }
+              ]
+            },
+            "url": "{{baseUrl}}/cv/upload",
+            "description": "Upload CV (field: cv), get job matches with similarity scores. Candidate/admin."
+          }
+        },
+        {
+          "name": "Get CV Matches (Last Upload)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": "{{baseUrl}}/cv/matches?limit=20",
+            "description": "Get matches from last uploaded CV. Candidate/admin."
+          }
+        }
+      ]
+    }
+  ]
+}

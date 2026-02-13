@@ -34,9 +34,13 @@ class AiService {
         return Array.from(output.data);
     }
 
-    // Helper to construct searchable text from Job
+    // Helper to construct searchable text from Job (for embedding / vector search)
     getJobText(job) {
-        return `${job.title} ${job.description} ${job.skills ? job.skills.join(' ') : ''}`;
+        const title = job.title || '';
+        const description = job.description || '';
+        const skills = Array.isArray(job.skills) ? job.skills.join(' ') : '';
+        const requirements = Array.isArray(job.requirements) ? job.requirements.join(' ') : '';
+        return [title, description, skills, requirements].filter(Boolean).join(' ').trim();
     }
 }
 

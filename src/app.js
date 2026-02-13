@@ -23,6 +23,7 @@ const companyRoutes = require('./routes/companies');
 const scrapingRoutes = require('./routes/scraping');
 const analyticsRoutes = require('./routes/analytics');
 const adminRoutes = require('./routes/adminRoutes');
+const cvRoutes = require('./routes/cv');
 
 const app = express();
 
@@ -477,6 +478,7 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/admin/scraping', scrapingRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/cv', cvRoutes);
 
 // =====================================
 // ERROR HANDLING

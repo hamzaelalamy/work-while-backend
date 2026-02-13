@@ -12,7 +12,9 @@
     "docs": "swagger-jsdoc -d docs/swagger.json src/routes/*.js",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
-    "seed": "node src/scripts/seed.js"
+    "seed": "node src/scripts/seed.js",
+    "vectorize-jobs": "node src/scripts/vectorizeJobs.js",
+    "vectorize-jobs:force": "node src/scripts/vectorizeJobs.js --force"
   },
   "dependencies": {
     "@xenova/transformers": "^2.17.2",
@@ -30,10 +32,12 @@
     "helmet": "^7.0.0",
     "joi": "^17.9.2",
     "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.11.0",
     "mongoose": "^7.5.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^7.0.12",
+    "pdf-parse": "^2.4.5",
     "puppeteer": "^24.34.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",

@@ -166,17 +166,20 @@ const jobSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Pre-save hook to generate embedding
+// Pre-save hook to generate embedding (must call next() after async work so save waits)
 jobSchema.pre('save', async function (next) {
-  if (this.isModified('title') || this.isModified('description') || this.isModified('skills')) {
-    try {
-      const AiService = require('../services/AiService');
-      const text = AiService.getJobText(this);
+  const needsEmbedding = this.isModified('title') || this.isModified('description') ||
+    this.isModified('skills') || this.isModified('requirements');
+  if (!needsEmbedding) return next();
+  try {
+    const AiService = require('../services/AiService');
+    const text = AiService.getJobText(this);
+    if (text) {
       this.embedding = await AiService.generateEmbedding(text);
-    } catch (error) {
-      console.error('Error generating embedding:', error);
-      // Don't block save on AI failure
     }
+  } catch (error) {
+    console.error('Error generating embedding:', error);
+    // Don't block save on AI failure
   }
   next();
 });

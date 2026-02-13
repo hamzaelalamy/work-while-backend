@@ -107,6 +107,27 @@ const upload = multer({
   fileFilter: fileFilter
 });
 
+// CV upload for job matching: memory storage so we get buffer for text extraction
+const cvStorage = multer.memoryStorage();
+const cvFileFilter = (req, file, cb) => {
+  const allowed = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/msword'
+  ];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowed.includes(file.mimetype) && ['.pdf', '.doc', '.docx'].includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('CV must be PDF or DOCX'), false);
+  }
+};
+const uploadCV = multer({
+  storage: cvStorage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: cvFileFilter
+}).single('cv');
+
 // Middleware pour gérer les uploads d'application - supporte les deux noms de champs
 const uploadApplicationFiles = upload.fields([
   { name: 'resume', maxCount: 1 },
@@ -278,6 +299,7 @@ const validateApplicationWithFiles = (req, res, next) => {
 
 module.exports = {
   uploadApplicationFiles,
+  uploadCV,
   handleUploadError,
   cleanupFiles,
   deleteFile,
