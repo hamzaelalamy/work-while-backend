@@ -12,5 +12,6 @@ router.get('/sectors', analyticsController.getTopSectors);
 router.get('/skills', analyticsController.getTopSkills);
 router.get('/locations', analyticsController.getLocationTrends);
 router.get('/trends', analyticsController.getJobTrends);
+router.get('/application-status', analyticsController.getApplicationStatusDistribution);
 
 module.exports = router;

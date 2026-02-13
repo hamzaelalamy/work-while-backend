@@ -32,6 +32,12 @@ const app = express();
 connectDB();
 
 // =====================================
+// HOURLY SCRAPING SCHEDULER
+// =====================================
+const { startScrapingScheduler } = require('./services/scraping/scrapingScheduler');
+startScrapingScheduler();
+
+// =====================================
 // TRUST PROXY CONFIGURATION
 // =====================================
 // Nécessaire pour ngrok et les proxies inverses

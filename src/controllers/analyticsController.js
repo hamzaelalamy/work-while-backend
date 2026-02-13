@@ -102,10 +102,14 @@ class AnalyticsController {
         }
     }
 
-    // GET /api/v1/analytics/trends (Time series)
+    // GET /api/v1/analytics/trends (Time series – last 30 calendar days)
     async getJobTrends(req, res) {
         try {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
             const trends = await Job.aggregate([
+                { $match: { createdAt: { $gte: thirtyDaysAgo } } },
                 {
                     $group: {
                         _id: {
@@ -114,11 +118,24 @@ class AnalyticsController {
                         count: { $sum: 1 }
                     }
                 },
-                { $sort: { _id: 1 } },
-                { $limit: 30 } // Last 30 days
+                { $sort: { _id: 1 } }
             ]);
 
             res.status(200).json(trends);
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    }
+
+    // GET /api/v1/analytics/application-status
+    async getApplicationStatusDistribution(req, res) {
+        try {
+            const distribution = await Application.aggregate([
+                { $group: { _id: '$status', count: { $sum: 1 } } },
+                { $sort: { count: -1 } }
+            ]);
+
+            res.status(200).json(distribution);
         } catch (error) {
             res.status(500).json({ message: error.message });
         }

@@ -21,7 +21,7 @@ const getAllJobs = catchAsync(async (req, res, next) => {
       sortBy = 'createdAt',
       sortOrder = 'desc',
       page = 1,
-      limit = 10
+      limit = 50
     } = req.query;
 
     // Construction du filtre
@@ -138,6 +138,7 @@ const getJobById = catchAsync(async (req, res, next) => {
 
   try {
     const job = await Job.findById(id)
+      .select('+originalLink')
       .populate('company', 'name logo location description website')
       .populate('postedBy', 'firstName lastName')
       .populate('applications', 'applicant status createdAt')
